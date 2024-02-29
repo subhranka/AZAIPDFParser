@@ -1,0 +1,33 @@
+!pip install chromadb
+!pip install langchain
+!pip install openai
+!pip install PyPDF2
+!pip install unstructured[local-inference]
+!pip install tiktoken
+
+import langchain
+import os
+import openai
+
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+from langchain import OpenAI
+from langchain.chains import RetrievalQA
+from langchain.document_loaders import DirectoryLoader
+from langchain.text_splitter import CharacterTextSplitter
+import nltk
+from PyPDF2 import PdfReader
+
+loader = DirectoryLoader('test_data', glob='**/*.pdf')
+documents= loader.load()
+
+text_splitter = CharacterTextSplitter(chunk_size=800, chunk_overlap=0)
+texts = text_splitter.split_documents(documents)
+
+os.environ["OPENAI_API_KEY"] = "your key"
+embeddings = OpenAIEmbeddings(openai_api_key = os.environ['OPENAI_API_KEY'])
+doc_search = Chroma.from_documents(texts, embeddings)
+
+chain = RetrievalQA.from_chain_type(llm=OpenAI(), chain_type="stuff", retriever=doc_search.as_retriever())
+query = "what is the permanent adrress of Abhinav Singh Thakur?"
+chain.run(query)
